@@ -1,78 +1,74 @@
-#include <iostream>
-#include <unordered_map>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <algorithm>
-#include<set>
+#include <bits/stdc++.h>
 using namespace std;
-string toLowerCase(const string& str) {
-    string result = str;
-    transform(result.begin(), result.end(), result.begin(), ::tolower);
-    return result;
-}
-//tolower() funcn to transform all string in to lower
-vector<string> split(const string& text) {
+unordered_map<string,set<pair<int,int>>>wordIndex;
+vector<string> split(string s)
+{
+    transform(s.begin(),s.end(),s.begin(),::tolower);
+    s.erase(remove_if(s.begin(),s.end(),::ispunct),s.end());
     vector<string> words;
-    string word;
-    for(int i=0;i<text.size();i++)
+    string temp = "";
+    for(int i =0;i<s.size();i++)
     {
-        if(text[i]==' ')
+        if(s[i]==' ')
         {
-            words.push_back(word);
-            word="";
+            words.push_back(temp);
+            temp = "";
             continue;
         }
-        word+=text[i];
+        temp.push_back(s[i]);
     }
-    if(word.size()>0)
-    {
-        words.push_back(word);
-    }
+    words.push_back(temp);
     return words;
 }
-    unordered_map<string, set<int>> index;
-    void buildIndex(const vector<pair<int, string>>& docs) {
-        for (const auto& doc : docs) {
-            int docId = doc.first;
-            vector<string> words = split(doc.second);
-            for (const auto& word : words) {
-                index[word].insert(docId);
-            }
-            
+void buildwordIndex(vector<pair<int, string>> &documents)
+{
+    for(auto doc:documents)
+    {
+        int idx = doc.first;
+        string content = doc.second;
+        vector<string> words = split(content);
+        for(int i=0;i<words.size();i++)
+        {
+            wordIndex[words[i]].insert({idx,i});
         }
     }
-    vector<int> search(const string& phrase) {
-        vector<string> words = split(phrase);
-        if (words.empty()) return {};
-
-        unordered_map<int, int> docCount; // Document and how many matching words were found in it
-        for (const auto& word : words) {
-            if (index.find(word) != index.end()) {
-                for (int docId : index[word]) {
-                    docCount[docId]++;
-                }
-            
+}
+vector<int>search(string phrase)
+{
+    vector<string> words = split(phrase);
+    if(words.size()==0)return {};
+    auto eligible = wordIndex[words[0]];
+    for(int i=1;i<words.size();i++)
+    {
+        auto st = wordIndex[words[i]];
+        set<pair<int,int>> newCandidate;
+        for(auto x:eligible)
+        {
+            int doc_id = x.first;
+            int idx = x.second;
+            if(st.find({doc_id,idx+1}) != st.end())
+            {
+                newCandidate.insert({doc_id,idx+1});
             }
         }
-        vector<int> result;
-        for (const auto& entry : docCount) {
-            if (entry.second == words.size()) {
-                result.push_back(entry.first);
-            }
-        }
-
-        return result;
+        eligible = newCandidate;
     }
-
-
+    set<int>ans;
+    for(auto x:eligible)
+    {
+        ans.insert(x.first);
+    }
+    vector<int>anss(ans.begin(),ans.end());
+    return anss;
+    
+}
 int main() {
     vector<pair<int, string>> documents = {
         {1, "cloud computing is the on-demand availability of computer system resources."},
         {2, "one integrated service for metrics uptime cloud monitoring dashboards and alerts reduces time spent navigating between systems."},
         {3, "monitor entire cloud infrastructure, whether in the cloud computing is or in virtualized data centers."}
     };
-    buildIndex(documents);
+    buildwordIndex(documents);
     vector<int> result1 = search("cloud");
     vector<int> result2 = search("cloud monitoring");
     vector<int> result3 = search("cloud computing is");
@@ -91,5 +87,5 @@ int main() {
         cout << docId << " ";
     }
     cout << endl;
-    return 0;
+	return 0;
 }
